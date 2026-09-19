@@ -1,0 +1,24 @@
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
+terraform/*.tfplan
+crash.log
+crash.*.log
+
+# Ansible - generated inventory, never commit real IPs/keys
+ansible/inventory/hosts.ini
+*.retry
+
+# Secrets
+*.pem
+*.key
+.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

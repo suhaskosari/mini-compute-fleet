@@ -1,0 +1,11 @@
+---
+fleet_timezone: "Europe/Stockholm"
+service_user: "fleetsvc"
+
+node_exporter_version: "1.8.2"
+node_exporter_user: "node_exporter"
+
+webapp_port: 8080
+
+prometheus_version: "2.54.1"
+grafana_apt_key_url: "https://apt.grafana.com/gpg.key"

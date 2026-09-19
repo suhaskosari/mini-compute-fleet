@@ -1,0 +1,22 @@
+---
+# Full fleet configuration: baseline hardening + monitoring + demo app on
+# every node, plus Prometheus/Grafana on the designated monitoring node.
+#
+# Usage:
+#   ansible-playbook playbooks/site.yml            # apply
+#   ansible-playbook playbooks/site.yml --check     # dry-run (used in CI)
+
+- name: Configure baseline + demo app on every fleet node
+  hosts: fleet
+  become: true
+  roles:
+    - common
+    - ssh_hardening
+    - node_exporter
+    - webapp
+
+- name: Configure Prometheus + Grafana on the monitoring node
+  hosts: monitoring
+  become: true
+  roles:
+    - monitoring_server

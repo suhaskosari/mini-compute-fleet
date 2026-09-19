@@ -1,0 +1,110 @@
+name: Deploy
+
+# Auto-applies to the real fleet on merge to main. Requires repo secrets:
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, ADMIN_CIDR, SSH_KEY_NAME,
+#   SSH_PRIVATE_KEY (the private half of SSH_KEY_NAME's EC2 key pair)
+# With no secrets configured this workflow no-ops instead of failing, so a
+# fork or a freshly-cloned copy of this repo doesn't get a red X for free.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - "ansible/**"
+      - ".github/workflows/deploy.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - id: check
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: echo "configured=${{ secrets.AWS_ACCESS_KEY_ID != '' }}" >> "$GITHUB_OUTPUT"
+
+  apply:
+    name: terraform apply
+    needs: check-secrets
+    if: needs.check-secrets.outputs.configured == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: terraform
+    outputs:
+      applied: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: terraform init
+        run: terraform init
+
+      - name: terraform apply
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="admin_cidr=${{ secrets.ADMIN_CIDR }}" \
+            -var="ssh_key_name=${{ secrets.SSH_KEY_NAME }}"
+
+      - name: Upload generated inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: ansible-inventory
+          path: ansible/inventory/hosts.ini
+
+  configure:
+    name: ansible-playbook site.yml
+    needs: apply
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ansible-inventory
+          path: ansible/inventory
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ansible
+        run: pip install "ansible-core>=2.16"
+
+      - name: Install required collections
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Write SSH private key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/${{ secrets.SSH_KEY_NAME }}.pem
+          chmod 600 ~/.ssh/${{ secrets.SSH_KEY_NAME }}.pem
+
+      - name: Wait for SSH on every node
+        run: |
+          for host in $(grep ansible_host inventory/hosts.ini | sed -E 's/.*ansible_host=([0-9.]+).*/\1/' | sort -u); do
+            echo "Waiting for $host:22..."
+            timeout 180 bash -c "until nc -z $host 22; do sleep 5; done"
+          done
+
+      - name: Run site.yml
+        run: ansible-playbook playbooks/site.yml

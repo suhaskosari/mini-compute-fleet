@@ -1,0 +1,39 @@
+---
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Remove default nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Deploy fleet-node site config
+  template:
+    src: fleet-node.conf.j2
+    dest: /etc/nginx/sites-available/fleet-node.conf
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Enable fleet-node site
+  file:
+    src: /etc/nginx/sites-available/fleet-node.conf
+    dest: /etc/nginx/sites-enabled/fleet-node.conf
+    state: link
+  notify: Reload nginx
+
+- name: Deploy status page
+  template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: "0644"
+
+- name: Ensure nginx is enabled and running
+  systemd:
+    name: nginx
+    enabled: true
+    state: started

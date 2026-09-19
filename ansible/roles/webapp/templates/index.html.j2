@@ -1,0 +1,25 @@
+<!-- {{ ansible_managed }} -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>mini-compute-fleet</title>
+    <style>
+        body { font-family: monospace; background: #10131a; color: #d7e0ea; padding: 3rem; }
+        h1 { color: #6fd6a8; }
+        dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+        dt { color: #8ea3bd; }
+    </style>
+</head>
+<body>
+    <h1>mini-compute-fleet</h1>
+    <p>Configured by Ansible. If you can read this, the config-management pipeline landed on this node.</p>
+    <dl>
+        <dt>hostname</dt><dd>{{ ansible_hostname }}</dd>
+        <dt>role</dt><dd>{{ "monitoring" if "monitoring" in group_names else "fleet" }}</dd>
+        <dt>private_ip</dt><dd>{{ ansible_default_ipv4.address | default('n/a') }}</dd>
+        <dt>os</dt><dd>{{ ansible_distribution }} {{ ansible_distribution_version }}</dd>
+        <dt>last configured</dt><dd>{{ ansible_date_time.iso8601 }}</dd>
+    </dl>
+</body>
+</html>

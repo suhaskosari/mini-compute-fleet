@@ -1,0 +1,30 @@
+{{ ansible_managed | comment }}
+Port 22
+Protocol 2
+AddressFamily any
+
+# Auth
+PermitRootLogin no
+PasswordAuthentication no
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+KbdInteractiveAuthentication no
+UsePAM yes
+PubkeyAuthentication yes
+MaxAuthTries 3
+LoginGraceTime 20
+
+# Session hardening
+X11Forwarding no
+AllowAgentForwarding no
+AllowTcpForwarding no
+PermitTunnel no
+ClientAliveInterval 300
+ClientAliveCountMax 2
+MaxSessions 4
+TCPKeepAlive no
+
+# Only these subsystems, nothing else
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+AcceptEnv LANG LC_*
