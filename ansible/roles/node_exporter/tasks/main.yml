@@ -15,7 +15,8 @@
     state: present
 
 - name: Check installed node_exporter version
-  ansible.builtin.command: /usr/local/bin/node_exporter --version
+  ansible.builtin.command:
+    cmd: /usr/local/bin/node_exporter --version
   register: node_exporter_installed
   failed_when: false
   changed_when: false

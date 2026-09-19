@@ -26,8 +26,9 @@
     - /var/lib/prometheus
 
 - name: Check installed prometheus version
-  ansible.builtin.command: /usr/local/bin/prometheus --version
-  register: prometheus_installed
+  ansible.builtin.command:
+    cmd: /usr/local/bin/prometheus --version
+  register: monitoring_server_prometheus_installed
   failed_when: false
   changed_when: false
 
@@ -36,14 +37,14 @@
     url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
     dest: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
     mode: "0644"
-  when: prometheus_version not in (prometheus_installed.stderr | default('') + prometheus_installed.stdout | default(''))
+  when: prometheus_version not in (monitoring_server_prometheus_installed.stderr | default('') + monitoring_server_prometheus_installed.stdout | default(''))
 
 - name: Extract prometheus release
   ansible.builtin.unarchive:
     src: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
     dest: /tmp
     remote_src: true
-  when: prometheus_version not in (prometheus_installed.stderr | default('') + prometheus_installed.stdout | default(''))
+  when: prometheus_version not in (monitoring_server_prometheus_installed.stderr | default('') + monitoring_server_prometheus_installed.stdout | default(''))
 
 - name: Install prometheus + promtool binaries
   ansible.builtin.copy:
@@ -56,7 +57,7 @@
   loop:
     - prometheus
     - promtool
-  when: prometheus_version not in (prometheus_installed.stderr | default('') + prometheus_installed.stdout | default(''))
+  when: prometheus_version not in (monitoring_server_prometheus_installed.stderr | default('') + monitoring_server_prometheus_installed.stdout | default(''))
   notify: Restart prometheus
 
 - name: Deploy prometheus.yml scrape config (fleet-wide targets)
