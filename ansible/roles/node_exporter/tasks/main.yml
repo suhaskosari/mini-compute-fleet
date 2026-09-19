@@ -1,12 +1,12 @@
 ---
 - name: Create node_exporter system group
-  group:
+  ansible.builtin.group:
     name: "{{ node_exporter_user }}"
     system: true
     state: present
 
 - name: Create node_exporter system user
-  user:
+  ansible.builtin.user:
     name: "{{ node_exporter_user }}"
     group: "{{ node_exporter_user }}"
     system: true
@@ -15,27 +15,27 @@
     state: present
 
 - name: Check installed node_exporter version
-  command: /usr/local/bin/node_exporter --version
+  ansible.builtin.command: /usr/local/bin/node_exporter --version
   register: node_exporter_installed
   failed_when: false
   changed_when: false
 
 - name: Download node_exporter release
-  get_url:
+  ansible.builtin.get_url:
     url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
     dest: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
     mode: "0644"
   when: node_exporter_version not in node_exporter_installed.stdout | default('')
 
 - name: Extract node_exporter
-  unarchive:
+  ansible.builtin.unarchive:
     src: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
     dest: /tmp
     remote_src: true
   when: node_exporter_version not in node_exporter_installed.stdout | default('')
 
 - name: Install node_exporter binary
-  copy:
+  ansible.builtin.copy:
     src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
     dest: /usr/local/bin/node_exporter
     owner: root
@@ -46,14 +46,14 @@
   notify: Restart node_exporter
 
 - name: Deploy node_exporter systemd unit
-  template:
+  ansible.builtin.template:
     src: node_exporter.service.j2
     dest: /etc/systemd/system/node_exporter.service
     mode: "0644"
   notify: Restart node_exporter
 
 - name: Enable and start node_exporter
-  systemd:
+  ansible.builtin.systemd:
     name: node_exporter
     enabled: true
     state: started

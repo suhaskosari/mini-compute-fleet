@@ -1,12 +1,12 @@
 ---
 - name: Create prometheus system group
-  group:
+  ansible.builtin.group:
     name: prometheus
     system: true
     state: present
 
 - name: Create prometheus system user
-  user:
+  ansible.builtin.user:
     name: prometheus
     group: prometheus
     system: true
@@ -15,7 +15,7 @@
     state: present
 
 - name: Create prometheus directories
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     owner: prometheus
@@ -26,27 +26,27 @@
     - /var/lib/prometheus
 
 - name: Check installed prometheus version
-  command: /usr/local/bin/prometheus --version
+  ansible.builtin.command: /usr/local/bin/prometheus --version
   register: prometheus_installed
   failed_when: false
   changed_when: false
 
 - name: Download prometheus release
-  get_url:
+  ansible.builtin.get_url:
     url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
     dest: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
     mode: "0644"
   when: prometheus_version not in (prometheus_installed.stderr | default('') + prometheus_installed.stdout | default(''))
 
 - name: Extract prometheus release
-  unarchive:
+  ansible.builtin.unarchive:
     src: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
     dest: /tmp
     remote_src: true
   when: prometheus_version not in (prometheus_installed.stderr | default('') + prometheus_installed.stdout | default(''))
 
 - name: Install prometheus + promtool binaries
-  copy:
+  ansible.builtin.copy:
     src: "/tmp/prometheus-{{ prometheus_version }}.linux-amd64/{{ item }}"
     dest: "/usr/local/bin/{{ item }}"
     owner: root
@@ -60,7 +60,7 @@
   notify: Restart prometheus
 
 - name: Deploy prometheus.yml scrape config (fleet-wide targets)
-  template:
+  ansible.builtin.template:
     src: prometheus.yml.j2
     dest: /etc/prometheus/prometheus.yml
     owner: prometheus
@@ -69,52 +69,52 @@
   notify: Restart prometheus
 
 - name: Deploy prometheus systemd unit
-  template:
+  ansible.builtin.template:
     src: prometheus.service.j2
     dest: /etc/systemd/system/prometheus.service
     mode: "0644"
   notify: Restart prometheus
 
 - name: Enable and start prometheus
-  systemd:
+  ansible.builtin.systemd:
     name: prometheus
     enabled: true
     state: started
     daemon_reload: true
 
 - name: Add Grafana apt key
-  apt_key:
+  ansible.builtin.apt_key:
     url: "{{ grafana_apt_key_url }}"
     state: present
 
 - name: Add Grafana apt repo
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "deb https://apt.grafana.com stable main"
     state: present
     filename: grafana
 
 - name: Install Grafana
-  apt:
+  ansible.builtin.apt:
     name: grafana
     state: present
     update_cache: true
 
 - name: Deploy Grafana Prometheus datasource provisioning
-  copy:
+  ansible.builtin.copy:
     src: grafana-datasource.yml
     dest: /etc/grafana/provisioning/datasources/prometheus.yml
     mode: "0644"
   notify: Restart grafana
 
 - name: Deploy Grafana dashboard provisioning config
-  copy:
+  ansible.builtin.copy:
     src: grafana-dashboards.yml
     dest: /etc/grafana/provisioning/dashboards/fleet.yml
     mode: "0644"
   notify: Restart grafana
 
 - name: Create Grafana dashboards directory
-  file:
+  ansible.builtin.file:
     path: /var/lib/grafana/dashboards
     state: directory
     owner: grafana
@@ -122,7 +122,7 @@
     mode: "0755"
 
 - name: Copy fleet health dashboard JSON
-  copy:
+  ansible.builtin.copy:
     src: "{{ playbook_dir }}/../monitoring/grafana/dashboards/fleet-health.json"
     dest: /var/lib/grafana/dashboards/fleet-health.json
     owner: grafana
@@ -131,7 +131,7 @@
   notify: Restart grafana
 
 - name: Enable and start Grafana
-  systemd:
+  ansible.builtin.systemd:
     name: grafana-server
     enabled: true
     state: started

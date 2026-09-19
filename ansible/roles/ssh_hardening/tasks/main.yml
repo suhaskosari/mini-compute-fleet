@@ -1,6 +1,6 @@
 ---
 - name: Deploy hardened sshd_config
-  template:
+  ansible.builtin.template:
     src: sshd_config.j2
     dest: /etc/ssh/sshd_config
     owner: root
@@ -10,7 +10,7 @@
   notify: Restart sshd
 
 - name: Ensure ssh key directory permissions are correct for ubuntu user
-  file:
+  ansible.builtin.file:
     path: /home/ubuntu/.ssh
     state: directory
     owner: ubuntu

@@ -1,15 +1,15 @@
 ---
 - name: Update apt cache
-  apt:
+  ansible.builtin.apt:
     update_cache: true
     cache_valid_time: 3600
 
 - name: Upgrade all packages to latest
-  apt:
+  ansible.builtin.apt:
     upgrade: dist
 
 - name: Install baseline packages
-  apt:
+  ansible.builtin.apt:
     name:
       - curl
       - vim
@@ -26,13 +26,13 @@
     name: "{{ fleet_timezone }}"
 
 - name: Create dedicated service group
-  group:
+  ansible.builtin.group:
     name: "{{ service_user }}"
     system: true
     state: present
 
 - name: Create dedicated service user (no login shell, no password)
-  user:
+  ansible.builtin.user:
     name: "{{ service_user }}"
     group: "{{ service_user }}"
     system: true
@@ -41,7 +41,7 @@
     state: present
 
 - name: Enable unattended security upgrades
-  copy:
+  ansible.builtin.copy:
     dest: /etc/apt/apt.conf.d/51unattended-upgrades-fleet
     content: |
       Unattended-Upgrade::Allowed-Origins {
